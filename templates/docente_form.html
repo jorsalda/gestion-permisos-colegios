@@ -1,0 +1,52 @@
+<!-- templates/docente_form.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if docente %}Editar{% else %}Nuevo{% endif %} Docente</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('formulario') }}">📋 Gestión de Permisos</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="menu">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('formulario') }}">Formulario</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('listado') }}">Listado</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('listar_docentes') }}">Docentes</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h2>{% if docente %}Editar docente{% else %}Nuevo docente{% endif %}</h2>
+
+  <form method="post" class="card p-4">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre completo</label>
+      <input type="text" name="nombre" id="nombre" class="form-control" value="{{ docente.nombre if docente else '' }}" required>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-success">
+        {% if docente %}Actualizar{% else %}Guardar{% endif %}
+      </button>
+      <a href="{{ url_for('listar_docentes') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
