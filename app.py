@@ -3,12 +3,13 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Docente, Permiso, Colegio, Usuario
 from flask import Flask, render_template, request, redirect, url_for, flash, abort  # ← ¡Añade "abort"!
-import config
+import os
+import settings
 from datetime import datetime
 
 # Crear la app
 from flask import Flask
-from config import Config
+from settings import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -313,7 +314,7 @@ with app.app_context():
     db.create_all()
 
 
-import os
+
 
 if __name__ == "__main__":
     app.run(

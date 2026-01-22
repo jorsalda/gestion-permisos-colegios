@@ -1,4 +1,4 @@
-# config.py
+# settings.py
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -18,7 +18,7 @@ def test_db_connection():
     try:
         engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
         with engine.connect() as conn:
-           print("✅ Conexión exitosa a MySQL (desde config.py)")
+           print("✅ Conexión exitosa a MySQL (desde settings.py)")
     except OperationalError as e:
         print("❌ Error de conexión a MySQL:")
         print(e)
