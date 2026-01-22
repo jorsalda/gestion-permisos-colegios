@@ -7,6 +7,8 @@ class Colegio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(150), nullable=False, unique=True)
 
+from datetime import datetime
+
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
@@ -14,11 +16,15 @@ class Usuario(UserMixin, db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     colegio_id = db.Column(db.Integer, db.ForeignKey('colegios.id'), nullable=False)
 
-    # 👇 AÑADE ESTO:
-    def get_id(self):
-        return str(self.id)  # Flask-Login requiere que sea string
+    # 👇 NUEVOS CAMPOS
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    estatus = db.Column(db.String(20), default='activo')  # Antes decía 'estado'
 
-    is_active = True
+    def get_id(self):
+        return str(self.id)
+
+    is_active = True  # ← Esto sigue siendo necesario para Flask-Login
+
     colegio = db.relationship('Colegio', backref='usuarios')
 
 

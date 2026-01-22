@@ -1,6 +1,18 @@
-import password
 from flask import Flask, render_template, request, redirect, url_for, flash
-git add
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import db, Docente, Permiso, Colegio, Usuario
+from flask import Flask, render_template, request, redirect, url_for, flash, abort  # ← ¡Añade "abort"!
+import config
+from datetime import datetime
+
+# Crear la app
+app = Flask(__name__)
+app.config.from_object(config.Config)
+
+# Inicializar base de datos
+db.init_app(app)
+
 # 🔐 Configuración de Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -19,7 +31,6 @@ def index():
 
 
 # 🔑 Registro de nuevo colegio + usuario
-@app.route('/register', methods=['GET', 'POST'])
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -46,8 +57,10 @@ def register():
         # ✅ Hashear la contraseña con pbkdf2:sha256 (compatible con todas las versiones)
         usuario = Usuario(
             email=email,
-            password_hash=generate_password_hash(password, method='pbkdf2:sha256', salt_length=8),
-            colegio_id=colegio.id
+            password_hash=generate_password_hash(password, method='pbkdf2:sha256'),
+            colegio_id=colegio.id,
+            fecha_registro=datetime.utcnow(),  # ← Nueva columna
+            estado='activo'  # ← Estado inicial
         )
         db.session.add(usuario)
         db.session.commit()
@@ -56,6 +69,11 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/admin/solicitudes')
+def ver_solicitudes():
+    # Aquí es donde usted ve quién quiere registrarse
+    solicitudes = Usuario.query.filter_by(estatus='pendiente').all()
+    return render_template('solicitudes_registro.html', solicitudes=solicitudes)
 
 # 🔑 Inicio de sesión
 @app.route('/login', methods=['GET', 'POST'])
@@ -84,6 +102,9 @@ def logout():
 @app.route('/formulario', methods=['GET', 'POST'])
 @login_required
 def formulario():
+    if not verificar_acceso(current_user):
+        flash("⚠️ Tu período de prueba ha terminado. Contacta al administrador.", "warning")
+        return redirect(url_for('login'))
     docentes = Docente.query.filter_by(colegio_id=current_user.colegio_id).all()
     tipos = ['Vacaciones', 'Enfermedad', 'Permiso Personal', 'Capacitación', 'Otro']
 
@@ -137,13 +158,20 @@ def formulario():
 @app.route('/listado')
 @login_required
 def listado():
+    if not verificar_acceso(current_user):
+        flash("⚠️ Tu período de prueba ha terminado. Contacta al administrador.", "warning")
+        return redirect(url_for('login'))
     permisos = Permiso.query.filter_by(colegio_id=current_user.colegio_id).all()
     return render_template('permisos.html', permisos=permisos)
+
 
 # 👥 Gestión de docentes (PROTEGIDO)
 @app.route('/docentes')
 @login_required
 def listar_docentes():
+    if not verificar_acceso(current_user):
+        flash("⚠️ Tu período de prueba ha terminado. Contacta al administrador.", "warning")
+        return redirect(url_for('login'))
     docentes = Docente.query.filter_by(colegio_id=current_user.colegio_id).all()
     return render_template('docentes.html', docentes=docentes)
 
@@ -223,6 +251,8 @@ def eliminar_permiso(id):
     flash("🗑️ Permiso eliminado correctamente", "success")
     return redirect(url_for('listado'))
 
+
+# 🛠️ Ruta temporal para crear un admin (solo para desarrollo)
 @app.route('/crear-admin')
 def crear_admin():
     # Solo para desarrollo — elimínala después
@@ -235,19 +265,50 @@ def crear_admin():
 
     usuario = Usuario(
         email='admin@colegio.com',
-        password_hash=generate_password_hash(password),
+        password_hash=generate_password_hash('jes8026', method='pbkdf2:sha256', salt_length=8),  # ← ¡Corregido!
         colegio_id=colegio.id
     )
     db.session.add(usuario)
     db.session.commit()
-    return "✅ Usuario admin creado. Email: admin@colegio.com | Contraseña: admin123"
+    return "✅ Usuario admin creado. Email: admin@colegio.com | Contraseña: jes8026"
 
+from datetime import datetime, timedelta
 
+def verificar_acceso(usuario):
+    if usuario.estatus == 'bloqueado':
+        return False
+    if usuario.estatus == 'activo':
+        fin_prueba = usuario.fecha_registro + timedelta(days=14)
+        if datetime.utcnow() > fin_prueba:
+            usuario.estatus= 'pendiente'
+            db.session.commit()
+            return False
+        return True
+    return False  # estatus == 'pendiente'
+
+@app.route('/admin/solicitudes')
+@login_required
+def solicitudes():
+    if current_user.email != 'jorsalda@gmail.com':  # Solo tú
+        abort(403)
+    pendientes = Usuario.query.filter_by(estado='pendiente').all()
+    return render_template('solicitudes.html', usuarios=pendientes)
+
+@app.route('/admin/aprobar/<int:id>')
+@login_required
+def aprobar(id):
+    if current_user.email != 'jorsalda@gmail.com':
+        abort(403)
+    u = Usuario.query.get_or_404(id)
+    u.estado = 'activo'
+    db.session.commit()
+    return redirect(url_for('solicitudes'))
 
 
 # 🧪 Crear tablas (solo en desarrollo)
 with app.app_context():
     db.create_all()
+
 
 if __name__ == '__main__':
     app.run(debug=True)

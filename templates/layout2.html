@@ -27,6 +27,13 @@
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'listar_docentes' %}active{% endif %}" href="{{ url_for('listar_docentes') }}">Docentes</a>
           </li>
+
+          <!-- 👇 ENLACE A SOLICITUDES (solo para ti) -->
+          {% if current_user.is_authenticated and current_user.email == 'jorsalda@gmail.com' %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'solicitudes' %}active{% endif %}" href="{{ url_for('solicitudes') }}">✅ Solicitudes</a>
+            </li>
+          {% endif %}
         </ul>
       </div>
     </div>
@@ -44,6 +51,13 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
+
+    <!-- 👇 MENSAJE EN EL DASHBOARD (solo en /formulario y solo para ti) -->
+    {% if current_user.is_authenticated and current_user.email|lower == 'jorsalda@gmail.com' %}
+  <li class="nav-item">
+    <a class="nav-link {% if request.endpoint == 'solicitudes' %}active{% endif %}" href="{{ url_for('solicitudes') }}">✅ Solicitudes</a>
+  </li>
+{% endif %}
 
     <!-- Contenido específico de cada página -->
     {% block content %}{% endblock %}

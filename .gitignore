@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+*.db
+instance/
+venv/
+.idea/
+.DS_Store
+static/js/
+static/css/
+static/img/

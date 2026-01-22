@@ -1,0 +1,24 @@
+<div class="container">
+    <h2>Solicitudes de Registro Pendientes</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in solicitudes %}
+            <tr>
+                <td>{{ s.nombre }}</td>
+                <td>{{ s.correo }}</td>
+                <td>
+                    <button class="btn btn-success">Aprobar</button>
+                    <button class="btn btn-danger">Rechazar</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
