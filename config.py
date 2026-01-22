@@ -7,7 +7,7 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'clave_super_segura'
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/permisos'# ← SIN CONTRASEÑA, SIN DOS PUNTOS
+    #SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/permisos'# ← SIN CONTRASEÑA, SIN DOS PUNTOS
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEBUG = True
 
