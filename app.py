@@ -10,7 +10,9 @@ from datetime import datetime
 # Crear la app
 from flask import Flask
 from settings import Config
+import os
 
+print("🔎 DATABASE_URL =", os.environ.get("DATABASE_URL"))
 app = Flask(__name__)
 app.config.from_object(Config)
 
