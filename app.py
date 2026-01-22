@@ -7,8 +7,11 @@ import config
 from datetime import datetime
 
 # Crear la app
+from flask import Flask
+from config import Config
+
 app = Flask(__name__)
-app.config.from_object(config.Config)
+app.config.from_object(Config)
 
 # Inicializar base de datos
 db.init_app(app)
