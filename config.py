@@ -20,8 +20,8 @@ class Config:
             SQLALCHEMY_DATABASE_URI = database_url
     else:
         # Desarrollo local (sin SSL)
-        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/permisos'
-        print("🔧 Usando base de datos local")
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///permisos.db'
+        print("🔧 Usando SQLite para producción")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
