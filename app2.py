@@ -3,7 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Docente, Permiso, Colegio, Usuario
 from flask import Flask, render_template, request, redirect, url_for, flash, abort  # ← ¡Añade "abort"!
-import settings
+import config
 from datetime import datetime
 
 # Crear la app

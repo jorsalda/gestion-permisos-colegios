@@ -1,21 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Docente, Permiso, Colegio, Usuario
-from flask import Flask, render_template, request, redirect, url_for, flash, abort  # ← ¡Añade "abort"!
-import os
-import settings
-from datetime import datetime
+import config
+from datetime import datetime, timedelta
+import pymysql
+
+# Necesario para PyMySQL
+pymysql.install_as_MySQLdb()
 
 # Crear la app
-from flask import Flask
-from settings import Config
-import os
-
-print("🔎 DATABASE_URL =", os.environ.get("DATABASE_URL"))
 app = Flask(__name__)
-app.config.from_object(Config)
+app.config.from_object(config.Config)
 
+# ... resto de tu código ...
 # Inicializar base de datos
 db.init_app(app)
 
@@ -317,9 +315,6 @@ with app.app_context():
 
 
 
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
-    )
+if __name__ == '__main__':
+    # Para desarrollo local
+    app.run(host='0.0.0.0', port=5000, debug=True)
