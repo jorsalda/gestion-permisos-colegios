@@ -1,43 +1,33 @@
+# config.py
 import os
 from dotenv import load_dotenv
-
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 load_dotenv()
 
-
 class Config:
-    # Clave secreta para sesiones (Render generará una automáticamente)
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'clave-temporal-desarrollo-123'
-
-    # Configuración de base de datos para PlanetScale
-    database_url = os.environ.get('DATABASE_URL', '')
-
-    if database_url:
-        print(f"🔗 Usando DATABASE_URL proporcionada")
-        # PlanetScale usa formato mysql://, necesitamos mysql+pymysql://
-        if database_url.startswith('mysql://'):
-            SQLALCHEMY_DATABASE_URI = database_url.replace('mysql://', 'mysql+pymysql://')
-        else:
-            SQLALCHEMY_DATABASE_URI = database_url
-    else:
-        # Desarrollo local (sin SSL)
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///permisos.db'
-        print("🔧 Usando SQLite para producción")
-
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'clave_super_segura'
+    SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://postgres:jes8026@localhost:5432/permisos"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DEBUG = True
 
-    # Configuración importante para producción
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_recycle": 300,  # Reconectar cada 5 minutos
-        "pool_pre_ping": True,  # Verificar conexión antes de usar
-        "pool_size": 10,
-        "max_overflow": 20,
-    }
+def test_db_connection():
+    """Prueba si la conexión a la base de datos es exitosa."""
+    print("🔍 Verificando conexión a la base de datos...")
 
-    # SSL para PlanetScale
-    if 'psdb.cloud' in database_url:
-        print("🔐 Configurando SSL para PlanetScale")
-        SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {
-            "ssl": {
-                "ssl_ca": "/etc/ssl/certs/ca-certificates.crt"
-            }
-        }
+    try:
+        engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
+        with engine.connect() as conn:
+           print("✅ Conexión exitosa a MySQL (desde config.py)")
+    except OperationalError as e:
+        print("❌ Error de conexión a MySQL:")
+        print(e)
+    except Exception as ex:
+        print("⚠️ Error inesperado al conectar:")
+        print(ex)
+
+# Ejecutar la prueba solo si este archivo se ejecuta directamente
+if __name__ == "__main__":
+    test_db_connection()
+
+

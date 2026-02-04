@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+
+{% block title %}Formulario de Permisos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">📝 Formulario de Permisos</h1>
+    
+    {% if current_user.is_authenticated %}
+    <div class="alert alert-info mb-4">
+        Colegio: <strong>{{ current_user.colegio.nombre }}</strong>
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Registrar Nuevo Permiso</h5>
+        </div>
+        <div class="card-body">
+            <!-- FORMULARIO SIMPLE Y FUNCIONAL -->
+            <form method="post" action="{{ url_for('formulario') }}">
+                <div class="row g-3">
+                    <!-- DOCENTE -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">👨‍🏫 Docente *</label>
+                        <select name="docente" class="form-select" required>
+                            <option value="">-- Seleccione un docente --</option>
+                            {% for d in docentes %}
+                            <option value="{{ d.id }}">{{ d.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Seleccione el docente</small>
+                    </div>
+                    
+                    <!-- FECHA INICIO -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">📅 Fecha inicio *</label>
+                        <input type="date" name="fecha_inicio" class="form-control" required 
+                               value="{{ today }}">
+                        <small class="text-muted">Fecha de inicio del permiso</small>
+                    </div>
+                    
+                    <!-- FECHA FIN -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">📅 Fecha fin *</label>
+                        <input type="date" name="fecha_fin" class="form-control" required 
+                               value="{{ today }}">
+                        <small class="text-muted">Fecha de fin del permiso</small>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-3">
+                    <!-- TIPO -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">📋 Tipo de permiso *</label>
+                        <select name="tipo" class="form-select" required>
+                            {% for t in tipos %}
+                            <option value="{{ t }}">{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Seleccione el tipo de permiso</small>
+                    </div>
+                    
+                    <!-- OBSERVACIÓN -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">📝 Observación</label>
+                        <textarea name="observacion" rows="2" class="form-control" 
+                                  placeholder="Observaciones adicionales..."></textarea>
+                        <small class="text-muted">Opcional</small>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-3 border-top">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        ✅ Guardar Permiso
+                    </button>
+                    <a href="{{ url_for('listado') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                        📋 Ver Listado
+                    </a>
+                    <button type="reset" class="btn btn-outline-warning btn-lg ms-2">
+                        🗑️ Limpiar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- LISTA RÁPIDA DE DOCENTES -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">👨‍🏫 Docentes Disponibles ({{ docentes|length }})</h5>
+        </div>
+        <div class="card-body">
+            {% if docentes %}
+            <div class="row">
+                {% for d in docentes %}
+                <div class="col-md-4 mb-2">
+                    <span class="badge bg-info">ID: {{ d.id }}</span> {{ d.nombre }}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                No hay docentes registrados. 
+                <a href="{{ url_for('listar_docentes') }}" class="alert-link">
+                    Agregar docentes primero
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Establecer fecha actual como valor por defecto
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Establecer fechas por defecto
+    const fechaInicio = document.querySelector('input[name="fecha_inicio"]');
+    const fechaFin = document.querySelector('input[name="fecha_fin"]');
+    
+    if (fechaInicio && !fechaInicio.value) {
+        fechaInicio.value = today;
+    }
+    if (fechaFin && !fechaFin.value) {
+        // Fecha fin = hoy + 1 día
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        fechaFin.value = tomorrow.toISOString().split('T')[0];
+    }
+    
+    // Validación: fecha fin no puede ser anterior a fecha inicio
+    fechaInicio.addEventListener('change', function() {
+        if (fechaFin.value && fechaFin.value < this.value) {
+            fechaFin.value = this.value;
+        }
+    });
+    
+    fechaFin.addEventListener('change', function() {
+        if (fechaInicio.value && this.value < fechaInicio.value) {
+            alert('La fecha fin no puede ser anterior a la fecha inicio');
+            this.value = fechaInicio.value;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,62 +1,219 @@
-<!-- templates/solicitudes.html -->
 {% extends "layout.html" %}
 
-{% block title %}Solicitudes Pendientes - Gestión de Permisos{% endblock %}
+{% block title %}Panel de Administración - Gestión de Permisos{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2>✅ Solicitudes Pendientes</h2>
-  <a href="{{ url_for('formulario') }}" class="btn btn-outline-secondary">← Volver</a>
-</div>
-
-{% if usuarios %}
-  <div class="card">
-    <div class="card-body p-0">
-      <table class="table table-bordered table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Email</th>
-            <th>Colegio</th>
-            <th>Registrado</th>
-            <th>Días sin acceso</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in usuarios %}
-            {% set dias_sin_acceso = (now() - u.fecha_registro).days - 14 %}
-            <tr>
-              <td>{{ u.email }}</td>
-              <td>{{ u.colegio.nombre }}</td>
-              <td>{{ u.fecha_registro.strftime('%Y-%m-%d') }}</td>
-              <td class="text-danger fw-bold">{{ dias_sin_acceso }} días</td>
-              <td>
-                <a href="{{ url_for('aprobar', id=u.id) }}"
-                   class="btn btn-success btn-sm"
-                   onclick="return confirm('¿Aprobar acceso para {{ u.email }}?')">
-                  ✅ Aprobar
-                </a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>👮‍♂️ Panel de Administración</h2>
+            <p class="text-muted mb-0">Gestiona el acceso de usuarios al sistema</p>
+        </div>
+        <a href="{{ url_for('formulario') }}" class="btn btn-outline-secondary">← Volver al Sistema</a>
     </div>
-  </div>
-{% else %}
-  <div class="alert alert-success d-flex align-items-center" role="alert">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle-fill me-2" viewBox="0 0 16 16">
-      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-    </svg>
-    ¡No hay solicitudes pendientes!
-  </div>
-{% endif %}
 
-<!-- Función now() para calcular días -->
-{% macro now() %}{{ None }}{% endmacro %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- PANEL DE INFORMACIÓN -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Usuarios Totales</h5>
+                    <h2 class="display-4">{{ usuarios|length }}</h2>
+                    <p class="card-text">Usuarios registrados en el sistema</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">En Período de Prueba</h5>
+                    <h2 class="display-4">{{ usuarios|selectattr('estatus', 'equalto', 'temporal')|list|length }}</h2>
+                    <p class="card-text">Usando los 15 días gratis</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Esperando Aprobación</h5>
+                    <h2 class="display-4">{{ usuarios|selectattr('estatus', 'equalto', 'pendiente_aprobacion')|list|length }}</h2>
+                    <p class="card-text">Período vencido</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE USUARIOS -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">📋 Lista de Usuarios Registrados</h5>
+            <small class="d-block mt-1">Usuarios ordenados por fecha de registro (más recientes primero)</small>
+        </div>
+        <div class="card-body p-0">
+            {% if usuarios %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Email</th>
+                            <th>Colegio</th>
+                            <th>Registro</th>
+                            <th>Estado</th>
+                            <th>Días</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        {% set dias_transcurridos = (now - usuario.fecha_registro).days %}
+                        {% set fecha_limite = usuario.fecha_limite_prueba if usuario.fecha_limite_prueba else (usuario.fecha_registro + timedelta(days=15)) %}
+                        {% set dias_restantes = (fecha_limite - now).days if fecha_limite > now else 0 %}
+                        {% set dias_vencidos = (now - fecha_limite).days if fecha_limite < now else 0 %}
+
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <strong>{{ usuario.email }}</strong>
+                                {% if usuario.email == 'jorsalda@gmail.com' %}
+                                <span class="badge bg-info ms-1">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ usuario.colegio.nombre }}</td>
+                            <td>
+                                {{ usuario.fecha_registro.strftime('%Y-%m-%d') }}
+                                <br>
+                                <small class="text-muted">{{ dias_transcurridos }} días</small>
+                            </td>
+                            <td>
+                                {% if usuario.aprobado_permanentemente %}
+                                <span class="badge bg-success">✅ Permanente</span>
+                                {% elif usuario.estatus == 'temporal' %}
+                                <span class="badge bg-warning">⏳ Temporal</span>
+                                {% elif usuario.estatus == 'pendiente_aprobacion' %}
+                                <span class="badge bg-danger">⏸️ Vencido</span>
+                                {% elif usuario.estatus == 'bloqueado' %}
+                                <span class="badge bg-secondary">❌ Bloqueado</span>
+                                {% elif usuario.estatus == 'activo' %}
+                                <span class="badge bg-primary">✅ Activo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if usuario.aprobado_permanentemente %}
+                                <span class="text-success">∞ Permanente</span>
+                                {% elif usuario.estatus == 'temporal' %}
+                                    {% if dias_restantes > 0 %}
+                                    <span class="text-warning fw-bold">{{ dias_restantes }} días</span>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-warning"
+                                             style="width: {{ (dias_restantes / 15) * 100 }}%">
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-danger fw-bold">¡VENCIDO!</span>
+                                    {% endif %}
+                                {% elif usuario.estatus == 'pendiente_aprobacion' %}
+                                <span class="text-danger fw-bold">
+                                    Vencido hace {{ dias_vencidos }} días
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if not usuario.aprobado_permanentemente and usuario.estatus != 'bloqueado' %}
+                                    <!-- BOTÓN APROBAR -->
+                                    <a href="{{ url_for('aprobar_usuario', id=usuario.id) }}"
+                                       class="btn btn-success btn-sm"
+                                       onclick="return confirm('¿APROBAR acceso PERMANENTE para {{ usuario.email }}?\\n\\nColegio: {{ usuario.colegio.nombre }}\\nRegistrado: {{ usuario.fecha_registro.strftime(\"%Y-%m-%d\") }}\\nDías usados: {{ dias_transcurridos }}')">
+                                       ✅ Aprobar
+                                    </a>
+
+                                    <!-- BOTÓN RECHAZAR/BLOQUEAR -->
+                                    <a href="{{ url_for('rechazar_usuario', id=usuario.id) }}"
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('¿BLOQUEAR acceso para {{ usuario.email }}?\\n\\n⚠️ Esta acción NO se puede deshacer.\\n\\nColegio: {{ usuario.colegio.nombre }}')">
+                                       ❌ Bloquear
+                                    </a>
+                                    {% elif usuario.estatus == 'bloqueado' %}
+                                    <span class="text-muted">Usuario bloqueado</span>
+                                    {% else %}
+                                    <span class="text-success">✅ Aprobado</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-people text-muted" viewBox="0 0 16 16">
+                        <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/>
+                    </svg>
+                </div>
+                <h4 class="text-muted">No hay usuarios registrados</h4>
+                <p class="text-muted">Los usuarios aparecerán aquí cuando se registren</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- INSTRUCCIONES -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">📋 Instrucciones de Uso</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>💡 Sobre los 15 días de prueba:</h6>
+                    <ul>
+                        <li>Los usuarios tienen <strong>acceso inmediato</strong> al registrarse</li>
+                        <li>Pueden usar <strong>todas las funciones</strong> durante 15 días</li>
+                        <li>El contador aparece en la columna <strong>"Días"</strong></li>
+                        <li>Cuando llegue a <strong>0</strong>, se bloquea automáticamente</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>👮‍♂️ Acciones disponibles:</h6>
+                    <ul>
+                        <li><button class="btn btn-success btn-sm disabled">✅ Aprobar</button> - Acceso PERMANENTE</li>
+                        <li><button class="btn btn-danger btn-sm disabled">❌ Bloquea</button> - Denegar acceso</li>
+                        <li><span class="badge bg-warning">⏳ Temporal</span> - En período de prueba</li>
+                        <li><span class="badge bg-danger">⏸️ Vencido</span> - Esperando tu decisión</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-  // Sobrescribimos la función 'now' en Jinja para usar la fecha actual del navegador
-  // Pero como no es posible, calculamos los días en el backend o asumimos que ya están calculados
-  // En este caso, usamos una aproximación simple
+// Función para actualizar automáticamente los contadores cada minuto
+function actualizarContadores() {
+    // Esta función se podría implementar con AJAX para actualización en tiempo real
+    // Por ahora, solo recargamos la página cada 5 minutos para ver cambios
+    setTimeout(function() {
+        window.location.reload();
+    }, 300000); // 5 minutos
+}
+
+// Iniciar la actualización automática
+actualizarContadores();
 </script>
 {% endblock %}

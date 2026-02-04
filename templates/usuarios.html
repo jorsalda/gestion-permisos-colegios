@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block title %}Usuarios Registrados{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👥 Usuarios Registrados</h2>
+    <div>
+        <a href="{{ url_for('solicitudes') }}" class="btn btn-outline-primary me-2">
+            👁️ Ver solo pendientes
+        </a>
+        <a href="{{ url_for('formulario') }}" class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-bordered table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Email</th>
+                    <th>Colegio</th>
+                    <th>Registro</th>
+                    <th>Estado</th>
+                    <th>Días restantes</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                {% set fin_prueba = u.fecha_registro + timedelta(days=15) %}
+                {% set dias_restantes = (fin_prueba - now).days %}
+                <tr>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.colegio.nombre }}</td>
+                    <td>{{ u.fecha_registro.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <span class="badge bg-{% if u.estatus == 'activo' and u.acceso_definitivo %}success
+                                           {% elif u.estatus == 'activo' and not u.acceso_definitivo %}info
+                                           {% elif u.estatus == 'pendiente' %}warning
+                                           {% else %}danger{% endif %}">
+                            {% if u.estatus == 'activo' and u.acceso_definitivo %}
+                                Activo (Definitivo)
+                            {% elif u.estatus == 'activo' and not u.acceso_definitivo %}
+                                Activo (Prueba)
+                            {% else %}
+                                {{ u.estatus|capitalize }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="fw-bold {% if dias_restantes < 0 %}text-danger
+                                      {% elif dias_restantes <= 3 %}text-warning
+                                      {% else %}text-success{% endif %}">
+                        {% if u.estatus == 'activo' and not u.acceso_definitivo %}
+                            {% if dias_restantes > 0 %}
+                                {{ dias_restantes }} días
+                            {% else %}
+                                <span class="text-danger">Prueba terminada</span>
+                            {% endif %}
+                        {% elif u.acceso_definitivo %}
+                            <span class="text-success">∞ Definitivo</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.estatus == 'pendiente' and not u.acceso_definitivo %}
+                        <a href="{{ url_for('aprobar', id=u.id) }}"
+                           class="btn btn-success btn-sm"
+                           onclick="return confirm('¿Aprobar acceso definitivo para {{ u.email }}?')">
+                            ✅ Aprobar
+                        </a>
+                        {% elif u.estatus == 'activo' %}
+                        <a href="{{ url_for('bloquear', id=u.id) }}"
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Bloquear a {{ u.email }}?')">
+                            🚫 Bloquear
+                        </a>
+                        {% elif u.estatus == 'bloqueado' %}
+                        <a href="{{ url_for('reactivar', id=u.id) }}"
+                           class="btn btn-primary btn-sm"
+                           onclick="return confirm('¿Reactivar a {{ u.email }} con 15 días de prueba?')">
+                            🔄 Reactivar
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

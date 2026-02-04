@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+
+{% block title %}Usuarios de {{ colegio.nombre }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👥 Usuarios de: <span class="text-primary">{{ colegio.nombre }}</span></h2>
+    <div>
+        <a href="{{ url_for('listar_colegios') }}" class="btn btn-outline-primary me-2">
+            🏫 Todos colegios
+        </a>
+        <a href="{{ url_for('listar_usuarios') }}" class="btn btn-outline-primary me-2">
+            👥 Todos usuarios
+        </a>
+        <a href="{{ url_for('formulario') }}" class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-info mb-4">
+    <strong>Colegio ID:</strong> {{ colegio.id }} | 
+    <strong>Usuarios registrados:</strong> {{ usuarios|length }}
+</div>
+
+{% if usuarios %}
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-bordered table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Registro</th>
+                    <th>Estado</th>
+                    <th>Acceso</th>
+                    <th>Días restantes</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                {% set fin_prueba = u.fecha_registro + timedelta(days=15) %}
+                {% set dias_restantes = (fin_prueba - now).days %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.fecha_registro.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <span class="badge bg-{% if u.estatus == 'activo' %}success
+                                           {% elif u.estatus == 'pendiente' %}warning
+                                           {% else %}danger{% endif %}">
+                            {{ u.estatus }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if u.acceso_definitivo %}success{% else %}info{% endif %}">
+                            {% if u.acceso_definitivo %}Definitivo{% else %}Prueba{% endif %}
+                        </span>
+                    </td>
+                    <td class="fw-bold {% if dias_restantes < 0 %}text-danger
+                                      {% elif dias_restantes <= 3 %}text-warning
+                                      {% else %}text-success{% endif %}">
+                        {% if not u.acceso_definitivo %}
+                            {% if dias_restantes > 0 %}
+                                {{ dias_restantes }} días
+                            {% elif u.estatus == 'pendiente' %}
+                                <span class="text-danger">Terminó</span>
+                            {% else %}
+                                0 días
+                            {% endif %}
+                        {% else %}
+                            <span class="text-success">∞ Ilimitado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.estatus == 'pendiente' and not u.acceso_definitivo %}
+                        <a href="{{ url_for('aprobar', id=u.id) }}" 
+                           class="btn btn-success btn-sm"
+                           onclick="return confirm('¿Aprobar acceso definitivo para {{ u.email }}?')">
+                            ✅ Aprobar
+                        </a>
+                        {% elif u.estatus == 'activo' %}
+                        <a href="{{ url_for('bloquear', id=u.id) }}" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Bloquear a {{ u.email }}?')">
+                            🚫 Bloquear
+                        </a>
+                        {% elif u.estatus == 'bloqueado' %}
+                        <a href="{{ url_for('reactivar', id=u.id) }}" 
+                           class="btn btn-primary btn-sm"
+                           onclick="return confirm('¿Reactivar a {{ u.email }} con 15 días de prueba?')">
+                            🔄 Reactivar
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    Este colegio no tiene usuarios registrados.
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('listar_colegios') }}" class="btn btn-outline-secondary">
+        ← Volver a lista de colegios
+    </a>
+</div>
+{% endblock %}
